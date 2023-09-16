@@ -9,6 +9,9 @@ import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import lab2.dataModel.User;
+import java.sql.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -18,11 +21,16 @@ public class UserForm extends javax.swing.JFrame {
 
     private List<User> list = new ArrayList<>();
     private DefaultTableModel tblModel;
+    private static String url = "jdbc:sqlserver://localhost:1433;databaseName=Java2_Staff;user=sa;password=123;encrypt=false;";
+
+    public static Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(url);
+    }
 
     /**
      * Creates new form UserForm
      */
-    public UserForm() {
+    public UserForm() throws SQLException {
         initComponents();
         setLocationRelativeTo(null);
         initTable();
@@ -42,10 +50,17 @@ public class UserForm extends javax.swing.JFrame {
         tblModel.fireTableDataChanged();
     }
 
-    public void initData() {
-        list.add(new User("quangvd", "quang123", "Admin"));
-        list.add(new User("ngocntm", "ngoc123", "User"));
-        list.add(new User("longvh", "long123", "User"));
+    public void initData() throws SQLException {
+//        list.add(new User("quangvd", "quang123", "Admin"));
+//        list.add(new User("ngocttm", "ngoc123", "User"));
+//        list.add(new User("longvh", "long123", "User"));
+        Connection con = getConnection();
+        Statement stm = con.createStatement();
+        ResultSet rs = stm.executeQuery("select * from staff");
+
+        while (rs.next()) {
+            list.add(new User(rs.getString("username"), rs.getString("pass_word"), rs.getString("role_user")));
+        }
     }
 
     public void initTable() {
@@ -297,6 +312,19 @@ public class UserForm extends javax.swing.JFrame {
         user.setRole(rdoUser.isSelected() ? "User" : "Admin");
 
         list.add(user);
+
+        try {
+            Connection con = getConnection();
+            String sql = "insert into staff values (?, ?, ?);";
+            PreparedStatement stm = con.prepareStatement(sql);
+            stm.setString(1, user.getUsername());
+            stm.setString(2, user.getPassword());
+            stm.setString(3, user.getRole());
+            stm.executeUpdate();
+        } catch (SQLException ex) {
+            System.out.println(ex);
+        }
+
         fillTable();
         JOptionPane.showMessageDialog(this, "Đã thêm");
         btnResetActionPerformed(evt);
@@ -309,11 +337,24 @@ public class UserForm extends javax.swing.JFrame {
         }
 
         for (User user : list) {
-            if (user.getUsername().equals(txtUser.getText())) {
+            if (user.getUsername().equals(txtUser.getText()) && user.getPassword().equals(new String(txtPass.getPassword())) && (rdoUser.isSelected() ? "User" : "Admin") == user.getRole()) {
                 int choice = (JOptionPane.showConfirmDialog(this, "Xoá?", "Xác nhận", JOptionPane.YES_NO_OPTION));
 
                 if (choice == JOptionPane.YES_OPTION) {
+
+                    try {
+                        Connection con = getConnection();
+                        String sql = "delete from staff where username = ? and pass_word = ? and role_user = ?";
+                        PreparedStatement stm = con.prepareStatement(sql);
+                        stm.setString(1, txtUser.getText());
+                        stm.setString(2, new String(txtPass.getPassword()));
+                        stm.setString(3, rdoUser.isSelected() ? "User" : "Admin");
+                        stm.executeQuery();
+                    } catch (SQLException ex) {
+                    }
+
                     list.remove(user);
+
                     fillTable();
                     JOptionPane.showMessageDialog(this, "Đã xoá");
                     btnResetActionPerformed(evt);
@@ -356,6 +397,18 @@ public class UserForm extends javax.swing.JFrame {
                 if (choice == JOptionPane.YES_OPTION) {
                     user.setPassword(new String(txtPass.getPassword()));
                     user.setRole(rdoUser.isSelected() ? "User" : "Admin");
+
+                    try {
+                        Connection con = getConnection();
+                        String sql = "update staff set pass_word = ?, role_user = ? where username = ?";
+                        PreparedStatement stm = con.prepareStatement(sql);
+                        stm.setString(1, new String(txtPass.getPassword()));
+                        stm.setString(2, rdoUser.isSelected() ? "User" : "Admin");
+                        stm.setString(3, txtUser.getText());
+                        stm.executeQuery();
+                    } catch (SQLException ex) {
+                    }
+
                     fillTable();
                     JOptionPane.showMessageDialog(this, "Đã cập nhật");
                     btnResetActionPerformed(evt);
@@ -366,7 +419,7 @@ public class UserForm extends javax.swing.JFrame {
                 }
             }
         }
-        
+
         JOptionPane.showMessageDialog(this, "Không tồn tại username này");
     }//GEN-LAST:event_btnUpdateActionPerformed
 
@@ -420,7 +473,11 @@ public class UserForm extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new UserForm().setVisible(true);
+                try {
+                    new UserForm().setVisible(true);
+                } catch (SQLException ex) {
+                    System.out.println(ex);
+                }
             }
         });
     }
