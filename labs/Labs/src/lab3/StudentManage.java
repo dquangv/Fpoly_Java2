@@ -11,6 +11,7 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import lab3.dataModel.Student;
+import java.sql.*;
 
 /**
  *
@@ -22,23 +23,41 @@ public class StudentManage extends javax.swing.JFrame {
     private List<Student> list = new ArrayList<>();
     //tạo đối tượng quản lý dữ liệu trong bảng
     private DefaultTableModel tblModel;
+    //mã nguồn kết nối với database (sql server)
+    private static String url = "jdbc:sqlserver://localhost:1433;databaseName=Java2_Student;user=sa;password=123;encrypt=false;";
+
+    //tạo phương thức kết nối với database
+    public static Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(url);
+    }
 
     /**
      * Creates new form StudentManage
      */
     public StudentManage() {
         initComponents();
+        
         //thiết lập vị trí cửa sổ hiện thị ở giữa màn hình
         setLocationRelativeTo(null);
     }
 
     //tạo đối tượng chứa dữ liệu rồi thêm vào ds
-    public void initData() {
-        list.add(new Student("Quang", 9.7, "Phát triển phần mềm"));
-        list.add(new Student("Long", 7, "Thiết kế đồ hoạ"));
-        list.add(new Student("Nhân", 3, "Lập trình Web"));
-        list.add(new Student("Độ", 6, "Ứng dụng phần mềm"));
-        list.add(new Student("Thông", 8.5, "Xử lý dữ liệu"));
+    public void initData() throws SQLException {
+//        list.add(new Student("Quang", 9.7, "Phát triển phần mềm"));
+//        list.add(new Student("Long", 7, "Thiết kế đồ hoạ"));
+//        list.add(new Student("Nhân", 3, "Lập trình Web"));
+//        list.add(new Student("Độ", 6, "Ứng dụng phần mềm"));
+//        list.add(new Student("Thông", 8.5, "Xử lý dữ liệu"));
+        try {
+            Connection con = getConnection();
+            Statement stm = con.createStatement();
+            ResultSet rs = stm.executeQuery("select * from student");
+
+            while (rs.next()) {
+                list.add(new Student(rs.getString("hovaten"), rs.getFloat("diem"), rs.getString("nganh")));
+            }
+        } catch (SQLException ex) {
+        }
     }
 
     //tạo và thiết lập ds cho ComboBox
@@ -51,10 +70,17 @@ public class StudentManage extends javax.swing.JFrame {
 
     //tạo và thiết lập ds cột tiêu đề cho bảng
     public void initTable() {
-        tblModel = (DefaultTableModel) tblStudent.getModel();
+        tblModel = new DefaultTableModel() {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
         String[] cols = new String[]{"HỌ VÀ TÊN", "ĐIỂM", "NGÀNH", "HỌC LỰC", "THƯỞNG"};
 
         tblModel.setColumnIdentifiers(cols);
+        tblStudent.setModel(tblModel);
     }
 
     //đổ dữ liệu từ danh sách vào bảng
@@ -63,12 +89,23 @@ public class StudentManage extends javax.swing.JFrame {
         tblModel.setRowCount(0);
 
         for (Student sv : list) {
-            Object[] row = new Object[]{sv.getName(), sv.getMark(), sv.getMarjor(), sv.getAcademic(), sv.isBonus()};
+            Object[] row = new Object[]{sv.getName(), sv.getMark(), sv.getMarjor(), sv.getAcademic(), sv.isBonus() ? "Có" : "Không"};
             tblModel.addRow(row);
         }
     }
 
-    public void addStudent() {
+    public void addStudent(java.awt.event.ActionEvent evt) throws SQLException {
+        //thông báo nếu để trống họ và tên
+        if (txtName.getText().equals("")) {
+            JOptionPane.showMessageDialog(this, "Chưa nhập họ và tên", "Lưu ý", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        //thông báo nếu để trống điểm
+        if (txtMark.getText().equals("")) {
+            JOptionPane.showMessageDialog(this, "Chưa nhập điểm", "Lưu ý", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         //tạo đối tượng sv để chứa dữ liệu
         Student sv = new Student();
 
@@ -82,18 +119,32 @@ public class StudentManage extends javax.swing.JFrame {
         //thêm đối tượng vào ds để đổ vào bảng
         list.add(sv);
 
+        try {
+            Connection con = getConnection();
+            String sql = "insert into student values (?, ?, ?, ?, ?)";
+            PreparedStatement stm = con.prepareStatement(sql);
+            stm.setString(1, sv.getName());
+            stm.setDouble(2, sv.getMark());
+            stm.setString(3, sv.getMarjor());
+            stm.setString(4, sv.getAcademic());
+            stm.setString(5, sv.isBonus() ? "Có" : "Không");
+            stm.executeQuery();
+        } catch (SQLException ex) {
+        }
+
         //đổ dữ liệu lại từ ds vào bảng sau khi vừa thêm đối tượng mới
         fillToTable();
-        
+
         //hiện thông báo sau khi thêm
         JOptionPane.showMessageDialog(this, "Đã thêm");
+        btnResetActionPerformed(evt);
     }
 
     //đổ dữ liệu từ bảng vào các ô nhập khi click vào dữ liệu trong bảng
     public void showDetail() {
         //lấy chỉ số hàng được click
         int index = tblStudent.getSelectedRow();
-        
+
         txtName.setText(list.get(index).getName());
         txtMark.setText(String.valueOf(list.get(index).getMark()));
         cboMajor.setSelectedItem(list.get(index).getMarjor());
@@ -107,6 +158,15 @@ public class StudentManage extends javax.swing.JFrame {
         int choice = JOptionPane.showConfirmDialog(this, "Chắc chắn xoá?", "Xác nhận", JOptionPane.YES_NO_CANCEL_OPTION);
 
         if (choice == JOptionPane.YES_OPTION) {
+            try {
+                Connection con = getConnection();
+                String sql = "delete from student where hovaten = ?";
+                PreparedStatement stm = con.prepareStatement(sql);
+                stm.setString(1, txtName.getText());
+                stm.executeQuery();
+            } catch (SQLException ex) {
+            }
+
             list.remove(index);
             fillToTable();
             JOptionPane.showMessageDialog(this, "Đã xoá");
@@ -126,21 +186,61 @@ public class StudentManage extends javax.swing.JFrame {
             txtAcademic.setText(sv.getAcademic());
             chkPrize.setSelected(sv.isBonus());
 
+            try {
+                Connection con = getConnection();
+                String sql = "update student set diem = ?, nganh = ?, hocluc = ?, thuong = ? where hovaten = ?";
+                PreparedStatement stm = con.prepareStatement(sql);
+                stm.setDouble(1, Double.parseDouble(txtMark.getText()));
+                stm.setString(2, (String) cboMajor.getSelectedItem());
+                stm.setString(3, txtAcademic.getText());
+                stm.setString(4, chkPrize.isSelected() ? "Có" : "Không");
+                stm.setString(5, txtName.getText());
+                stm.executeQuery();
+            } catch (SQLException ex) {
+            }
+
             fillToTable();
             JOptionPane.showMessageDialog(this, "Đã cập nhật");
         } else {
             JOptionPane.showMessageDialog(this, "Vui lòng chọn sinh viên muốn cập nhật");
         }
     }
-    
+
     public void sortName() {
-        Collections.sort(list, (o1, o2) -> (o1.getName().compareTo(o2.getName())));
+        Collections.sort(list, (o1, o2) -> {
+            String[] name1 = o1.getName().split(" ");
+            String[] name2 = o2.getName().split(" ");
+
+            String lastName1 = name1[name1.length - 1];
+            String lastName2 = name2[name2.length - 1];
+
+            return lastName1.compareTo(lastName2);
+        });
         fillToTable();
     }
-    
+
     public void sortMark() {
-        Collections.sort(list, ((o1, o2) -> (int) (o1.getMark() - o2.getMark())));
+        Collections.sort(list, ((o1, o2) -> Double.compare(o1.getMark(), o2.getMark())));
         fillToTable();
+    }
+
+    public void enterMark() {
+        if (Double.parseDouble(txtMark.getText()) < 3) {
+            txtAcademic.setText("Kém");
+            chkPrize.setSelected(false);
+        } else if (Double.parseDouble(txtMark.getText()) < 5) {
+            txtAcademic.setText("Yếu");
+            chkPrize.setSelected(false);
+        } else if (Double.parseDouble(txtMark.getText()) < 6.5) {
+            txtAcademic.setText("Trung bình");
+            chkPrize.setSelected(false);
+        } else if (Double.parseDouble(txtMark.getText()) < 7.5) {
+            txtAcademic.setText("Giỏi");
+            chkPrize.setSelected(false);
+        } else {
+            txtAcademic.setText("Xuất sắc");
+            chkPrize.setSelected(true);
+        }
     }
 
     /**
@@ -200,6 +300,18 @@ public class StudentManage extends javax.swing.JFrame {
         jLabel2.setText("HỌ VÀ TÊN");
 
         jLabel3.setText("ĐIỂM");
+
+        txtMark.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                txtMarkKeyPressed(evt);
+            }
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                txtMarkKeyReleased(evt);
+            }
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                txtMarkKeyTyped(evt);
+            }
+        });
 
         jLabel4.setText("NGÀNH");
 
@@ -364,13 +476,19 @@ public class StudentManage extends javax.swing.JFrame {
 
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
         initMajor();
-        initData();
+        try {
+            initData();
+        } catch (SQLException ex) {
+        }
         initTable();
         fillToTable();
     }//GEN-LAST:event_formWindowOpened
 
     private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddActionPerformed
-        addStudent();
+        try {
+            addStudent(evt);
+        } catch (SQLException ex) {
+        }
     }//GEN-LAST:event_btnAddActionPerformed
 
     private void tblStudentMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblStudentMouseClicked
@@ -393,6 +511,16 @@ public class StudentManage extends javax.swing.JFrame {
     private void btnSortMarkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSortMarkActionPerformed
         sortMark();
     }//GEN-LAST:event_btnSortMarkActionPerformed
+
+    private void txtMarkKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtMarkKeyPressed
+    }//GEN-LAST:event_txtMarkKeyPressed
+
+    private void txtMarkKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtMarkKeyTyped
+    }//GEN-LAST:event_txtMarkKeyTyped
+
+    private void txtMarkKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtMarkKeyReleased
+        enterMark();
+    }//GEN-LAST:event_txtMarkKeyReleased
 
     /**
      * @param args the command line arguments

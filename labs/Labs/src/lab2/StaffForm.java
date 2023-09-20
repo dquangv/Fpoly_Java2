@@ -67,6 +67,7 @@ public class StaffForm extends javax.swing.JFrame {
         jLabel4.setText("Country");
 
         jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Việt Nam", "Mỹ", "Canada", "Anh", "Pháp", "Singapore" }));
+        jComboBox1.setSelectedIndex(2);
         jComboBox1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBox1ActionPerformed(evt);

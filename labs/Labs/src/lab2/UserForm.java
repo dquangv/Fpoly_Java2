@@ -10,8 +10,6 @@ import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import lab2.dataModel.User;
 import java.sql.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -36,6 +34,7 @@ public class UserForm extends javax.swing.JFrame {
         initTable();
         initData();
         fillTable();
+        this.setTitle("Quản lý nhân viên");
     }
 
     public void fillTable() {
@@ -64,7 +63,13 @@ public class UserForm extends javax.swing.JFrame {
     }
 
     public void initTable() {
-        tblModel = new DefaultTableModel();
+        tblModel = new DefaultTableModel() {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        
         String[] cols = new String[]{"USERNAME", "PASSWORD", "ROLE"};
         tblModel.setColumnIdentifiers(cols);
         tblUser.setModel(tblModel);
@@ -230,6 +235,7 @@ public class UserForm extends javax.swing.JFrame {
                 return canEdit [columnIndex];
             }
         });
+        tblUser.getTableHeader().setReorderingAllowed(false);
         tblUser.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 tblUserMouseClicked(evt);
