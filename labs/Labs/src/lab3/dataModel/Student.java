@@ -1,5 +1,7 @@
 package lab3.dataModel;
 
+import java.text.DecimalFormat;
+
 public class Student {
 
     private String name, marjor;
@@ -23,7 +25,8 @@ public class Student {
     }
 
     public double getMark() {
-        return mark;
+        DecimalFormat df = new DecimalFormat("#.##");
+        return Double.parseDouble(df.format(mark));
     }
 
     public void setMark(double mark) {
@@ -41,19 +44,22 @@ public class Student {
     public String getAcademic() {
         if (this.mark < 3) {
             return "Kém";
-        } else if (this.mark < 5) {
-            return "Yếu";
-        } else if (this.mark < 6.5) {
-            return "Trung bình";
-        } else if (this.mark < 7.5) {
-            return "Khá";
-        } else if (this.mark < 9) {
-            return "Giỏi";
-        } else {
-            return "Xuất sắc";
         }
+        if (this.mark < 5) {
+            return "Yếu";
+        }
+        if (this.mark < 6.5) {
+            return "Trung bình";
+        }
+        if (this.mark < 7.5) {
+            return "Khá";
+        }
+        if (this.mark < 9) {
+            return "Giỏi";
+        }
+        return "Xuất sắc";
     }
-    
+
     public boolean isBonus() {
         return this.mark >= 7.5;
     }

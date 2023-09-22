@@ -25,6 +25,8 @@ public class StudentManage extends javax.swing.JFrame {
     private DefaultTableModel tblModel;
     //mã nguồn kết nối với database (sql server)
     private static String url = "jdbc:sqlserver://localhost:1433;databaseName=Java2_Student;user=sa;password=123;encrypt=false;";
+    //đặt chỉ số mặc định nếu chưa click vào ô nào
+    int index = -1;
 
     //tạo phương thức kết nối với database
     public static Connection getConnection() throws SQLException {
@@ -36,7 +38,7 @@ public class StudentManage extends javax.swing.JFrame {
      */
     public StudentManage() {
         initComponents();
-        
+
         //thiết lập vị trí cửa sổ hiện thị ở giữa màn hình
         setLocationRelativeTo(null);
     }
@@ -143,7 +145,7 @@ public class StudentManage extends javax.swing.JFrame {
     //đổ dữ liệu từ bảng vào các ô nhập khi click vào dữ liệu trong bảng
     public void showDetail() {
         //lấy chỉ số hàng được click
-        int index = tblStudent.getSelectedRow();
+        index = tblStudent.getSelectedRow();
 
         txtName.setText(list.get(index).getName());
         txtMark.setText(String.valueOf(list.get(index).getMark()));
@@ -153,56 +155,64 @@ public class StudentManage extends javax.swing.JFrame {
     }
 
     public void removeStudent() {
-        int index = tblStudent.getSelectedRow();
-        //hỏi xác nhận trước khi xoá
-        int choice = JOptionPane.showConfirmDialog(this, "Chắc chắn xoá?", "Xác nhận", JOptionPane.YES_NO_CANCEL_OPTION);
+        if (index == -1) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn sinh viên cần xoá, không nhập tay vì có thể trùng tên sinh viên");
+        } else {
+            index = tblStudent.getSelectedRow();
+            //hỏi xác nhận trước khi xoá
+            int choice = JOptionPane.showConfirmDialog(this, "Chắc chắn xoá?", "Xác nhận", JOptionPane.YES_NO_CANCEL_OPTION);
 
-        if (choice == JOptionPane.YES_OPTION) {
-            try {
-                Connection con = getConnection();
-                String sql = "delete from student where hovaten = ?";
-                PreparedStatement stm = con.prepareStatement(sql);
-                stm.setString(1, txtName.getText());
-                stm.executeQuery();
-            } catch (SQLException ex) {
+            if (choice == JOptionPane.YES_OPTION) {
+                try {
+                    Connection con = getConnection();
+                    String sql = "delete from student where hovaten = ?";
+                    PreparedStatement stm = con.prepareStatement(sql);
+                    stm.setString(1, txtName.getText());
+                    stm.executeQuery();
+                } catch (SQLException ex) {
+                }
+
+                list.remove(index);
+                fillToTable();
+                JOptionPane.showMessageDialog(this, "Đã xoá");
             }
-
-            list.remove(index);
-            fillToTable();
-            JOptionPane.showMessageDialog(this, "Đã xoá");
         }
     }
 
     public void updateStudent() {
-        int index = tblStudent.getSelectedRow();
+        index = tblStudent.getSelectedRow();
 
         //chỉ click vào dữ liệu trong bảng rồi thay đổi thì mới hiệu lực, không thể tự nhập dữ liệu từ đầu
-        if (index >= 0) {
-            Student sv = list.get(index);
-
-            sv.setName(txtName.getText());
-            sv.setMark(Double.parseDouble(txtMark.getText()));
-            sv.setMarjor((String) cboMajor.getSelectedItem());
-            txtAcademic.setText(sv.getAcademic());
-            chkPrize.setSelected(sv.isBonus());
-
-            try {
-                Connection con = getConnection();
-                String sql = "update student set diem = ?, nganh = ?, hocluc = ?, thuong = ? where hovaten = ?";
-                PreparedStatement stm = con.prepareStatement(sql);
-                stm.setDouble(1, Double.parseDouble(txtMark.getText()));
-                stm.setString(2, (String) cboMajor.getSelectedItem());
-                stm.setString(3, txtAcademic.getText());
-                stm.setString(4, chkPrize.isSelected() ? "Có" : "Không");
-                stm.setString(5, txtName.getText());
-                stm.executeQuery();
-            } catch (SQLException ex) {
-            }
-
-            fillToTable();
-            JOptionPane.showMessageDialog(this, "Đã cập nhật");
+        if (index == -1) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn sinh viên muốn cập nhật, không nhập tay vì có thể trùng tên sinh viên");
         } else {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn sinh viên muốn cập nhật");
+            try {
+                Student sv = list.get(index);
+
+                sv.setName(txtName.getText());
+                sv.setMark(Double.parseDouble(txtMark.getText()));
+                sv.setMarjor((String) cboMajor.getSelectedItem());
+                txtAcademic.setText(sv.getAcademic());
+                chkPrize.setSelected(sv.isBonus());
+
+                try {
+                    Connection con = getConnection();
+                    String sql = "update student set diem = ?, nganh = ?, hocluc = ?, thuong = ? where hovaten = ?";
+                    PreparedStatement stm = con.prepareStatement(sql);
+                    stm.setDouble(1, Double.parseDouble(txtMark.getText()));
+                    stm.setString(2, (String) cboMajor.getSelectedItem());
+                    stm.setString(3, txtAcademic.getText());
+                    stm.setString(4, chkPrize.isSelected() ? "Có" : "Không");
+                    stm.setString(5, txtName.getText());
+                    stm.executeQuery();
+                } catch (SQLException ex) {
+                }
+
+                fillToTable();
+                JOptionPane.showMessageDialog(this, "Đã cập nhật");
+            } catch (Exception e) {
+                index = -1;
+            }
         }
     }
 
@@ -225,21 +235,29 @@ public class StudentManage extends javax.swing.JFrame {
     }
 
     public void enterMark() {
-        if (Double.parseDouble(txtMark.getText()) < 3) {
-            txtAcademic.setText("Kém");
+        try {
+            if (Double.parseDouble(txtMark.getText()) < 3) {
+                txtAcademic.setText("Kém");
+                chkPrize.setSelected(false);
+            } if (Double.parseDouble(txtMark.getText()) < 5) {
+                txtAcademic.setText("Yếu");
+                chkPrize.setSelected(false);
+            } else if (Double.parseDouble(txtMark.getText()) < 6.5) {
+                txtAcademic.setText("Trung bình");
+                chkPrize.setSelected(false);
+            } else if (Double.parseDouble(txtMark.getText()) < 7.5) {
+                txtAcademic.setText("Khá");
+                chkPrize.setSelected(false);
+            } else if (Double.parseDouble(txtMark.getText()) < 9) {
+                txtAcademic.setText("Giỏi");
+                chkPrize.setSelected(true);
+            } else {
+                txtAcademic.setText("Xuất sắc");
+                chkPrize.setSelected(true);
+            }
+        } catch (Exception ex) {
+            txtAcademic.setText("");
             chkPrize.setSelected(false);
-        } else if (Double.parseDouble(txtMark.getText()) < 5) {
-            txtAcademic.setText("Yếu");
-            chkPrize.setSelected(false);
-        } else if (Double.parseDouble(txtMark.getText()) < 6.5) {
-            txtAcademic.setText("Trung bình");
-            chkPrize.setSelected(false);
-        } else if (Double.parseDouble(txtMark.getText()) < 7.5) {
-            txtAcademic.setText("Giỏi");
-            chkPrize.setSelected(false);
-        } else {
-            txtAcademic.setText("Xuất sắc");
-            chkPrize.setSelected(true);
         }
     }
 
@@ -467,6 +485,7 @@ public class StudentManage extends javax.swing.JFrame {
 
     //đưa các dữ liệu cần nhập về trạng thái rỗng ban đầu
     private void btnResetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnResetActionPerformed
+        index = -1;
         txtName.setText(null);
         txtMark.setText(null);
         txtAcademic.setText(null);
