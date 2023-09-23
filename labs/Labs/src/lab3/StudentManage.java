@@ -154,11 +154,10 @@ public class StudentManage extends javax.swing.JFrame {
         chkPrize.setSelected(list.get(index).isBonus());
     }
 
-    public void removeStudent() {
+    public void removeStudent(java.awt.event.ActionEvent evt) {
         if (index == -1) {
             JOptionPane.showMessageDialog(this, "Vui lòng chọn sinh viên cần xoá, không nhập tay vì có thể trùng tên sinh viên");
         } else {
-            index = tblStudent.getSelectedRow();
             //hỏi xác nhận trước khi xoá
             int choice = JOptionPane.showConfirmDialog(this, "Chắc chắn xoá?", "Xác nhận", JOptionPane.YES_NO_CANCEL_OPTION);
 
@@ -175,6 +174,7 @@ public class StudentManage extends javax.swing.JFrame {
                 list.remove(index);
                 fillToTable();
                 JOptionPane.showMessageDialog(this, "Đã xoá");
+                btnResetActionPerformed(evt);
             }
         }
     }
@@ -515,7 +515,7 @@ public class StudentManage extends javax.swing.JFrame {
     }//GEN-LAST:event_tblStudentMouseClicked
 
     private void btnDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDeleteActionPerformed
-        removeStudent();
+        removeStudent(evt);
         btnResetActionPerformed(evt);
     }//GEN-LAST:event_btnDeleteActionPerformed
 
