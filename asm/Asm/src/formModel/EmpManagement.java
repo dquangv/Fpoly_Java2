@@ -61,7 +61,7 @@ public class EmpManagement extends javax.swing.JFrame {
         }
     }
 
-    public void fillTable() {
+    public void fillTable(List<Employee> list) {
         tblModel.setRowCount(0);
 
         for (Employee emp : list) {
@@ -85,7 +85,8 @@ public class EmpManagement extends javax.swing.JFrame {
         txtAge.setText(null);
         txtEmail.setText(null);
         txtSalary.setText(null);
-
+        
+        fillTable(list);
         index = -1;
     }
 
@@ -121,9 +122,8 @@ public class EmpManagement extends javax.swing.JFrame {
                     stm.setInt(3, Integer.parseInt(txtAge.getText()));
                     stm.setString(4, txtEmail.getText());
                     stm.setDouble(5, Double.parseDouble(txtSalary.getText()));
-                    stm.setString(6, "'" + emp.getCode() + "'");fsdfsdfsdf
-
-                    System.out.println(txtCode.getText() + "'" + emp.getCode() + "'");
+                    stm.setString(6, emp.getCode());
+                    stm.executeQuery();
 
                 } catch (Exception ex) {
                 }
@@ -139,8 +139,53 @@ public class EmpManagement extends javax.swing.JFrame {
             }
         }
 
-        fillTable();
+        fillTable(list);
         clearForm();
+    }
+
+    public void deleteEmployee() {
+        if (index == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a staff you want to delete from the table below");
+        } else {
+            int choice = JOptionPane.showConfirmDialog(this, "Are you sure to delete?", "Confirm", JOptionPane.YES_NO_OPTION);
+
+            if (choice == JOptionPane.YES_OPTION) {
+                try {
+                    Connection con = getConnection();
+                    PreparedStatement stm = con.prepareStatement("delete from employee where code = ?");
+                    stm.setString(1, txtCode.getText());
+                    stm.executeQuery();
+                } catch (Exception ex) {
+                }
+
+                list.remove(index);
+                JOptionPane.showMessageDialog(this, "Deleted");
+                fillTable(list);
+                clearForm();
+            }
+        }
+    }
+
+    public void findEmployee() {
+        List<Employee> findList = new ArrayList<>();
+
+        for (Employee emp : list) {
+            if (emp.getCode().equals(txtCode.getText())) {
+                findList.add(emp);
+
+                txtCode.setText(emp.getCode());
+                txtName.setText(emp.getName());
+                txtAge.setText(String.valueOf(emp.getAge()));
+                txtEmail.setText(emp.getEmail());
+                txtSalary.setText(String.valueOf(emp.getSalary()));
+                
+                fillTable(findList);
+            }
+        }
+        
+        if (findList.size() == 0) {
+            JOptionPane.showMessageDialog(this,"This code was not found");
+        }
     }
 
     /**
@@ -284,15 +329,30 @@ public class EmpManagement extends javax.swing.JFrame {
 
         btnDelete.setForeground(new java.awt.Color(0, 0, 0));
         btnDelete.setText("Delete");
+        btnDelete.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnDeleteActionPerformed(evt);
+            }
+        });
 
         btnFind.setForeground(new java.awt.Color(0, 0, 0));
         btnFind.setText("Find");
+        btnFind.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnFindActionPerformed(evt);
+            }
+        });
 
         btnOpen.setForeground(new java.awt.Color(0, 0, 0));
         btnOpen.setText("Open");
 
         btnExit.setForeground(new java.awt.Color(0, 0, 0));
         btnExit.setText("Exit");
+        btnExit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnExitActionPerformed(evt);
+            }
+        });
 
         jLabel7.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
         jLabel7.setForeground(new java.awt.Color(255, 0, 51));
@@ -406,7 +466,7 @@ public class EmpManagement extends javax.swing.JFrame {
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
         initData();
         initTalbe();
-        fillTable();
+        fillTable(list);
     }//GEN-LAST:event_formWindowOpened
 
     private void btnNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNewActionPerformed
@@ -420,6 +480,18 @@ public class EmpManagement extends javax.swing.JFrame {
     private void tblEmployeeMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblEmployeeMouseClicked
         showDetail();
     }//GEN-LAST:event_tblEmployeeMouseClicked
+
+    private void btnDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDeleteActionPerformed
+        deleteEmployee();
+    }//GEN-LAST:event_btnDeleteActionPerformed
+
+    private void btnExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExitActionPerformed
+        System.exit(0);
+    }//GEN-LAST:event_btnExitActionPerformed
+
+    private void btnFindActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFindActionPerformed
+        findEmployee();
+    }//GEN-LAST:event_btnFindActionPerformed
 
     /**
      * @param args the command line arguments
