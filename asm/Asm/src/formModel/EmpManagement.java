@@ -77,6 +77,8 @@ public class EmpManagement extends javax.swing.JFrame {
         txtAge.setText(String.valueOf(list.get(index).getAge()));
         txtEmail.setText(list.get(index).getEmail());
         txtSalary.setText(String.valueOf(list.get(index).getSalary()));
+
+        lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
     }
 
     public void clearForm() {
@@ -85,9 +87,11 @@ public class EmpManagement extends javax.swing.JFrame {
         txtAge.setText(null);
         txtEmail.setText(null);
         txtSalary.setText(null);
-        
+
         fillTable(list);
         index = -1;
+
+        lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
     }
 
     public void saveForm() {
@@ -178,13 +182,48 @@ public class EmpManagement extends javax.swing.JFrame {
                 txtAge.setText(String.valueOf(emp.getAge()));
                 txtEmail.setText(emp.getEmail());
                 txtSalary.setText(String.valueOf(emp.getSalary()));
-                
+
                 fillTable(findList);
+                lblRecord.setText("Record: 1 of 1");
             }
         }
-        
+
         if (findList.size() == 0) {
-            JOptionPane.showMessageDialog(this,"This code was not found");
+            JOptionPane.showMessageDialog(this, "This code was not found");
+        }
+    }
+
+    private void selectEmp() {
+        tblEmployee.setRowSelectionInterval(index, index);
+        showDetail();
+        lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
+    }
+
+    public void firstEmp() {
+        index = 0;
+        selectEmp();
+    }
+
+    public void lastEmp() {
+        index = list.size() - 1;
+        selectEmp();
+    }
+
+    public void preEmp() {
+        if (index > 0) {
+            index -= 1;
+            selectEmp();
+        } else if (index == 0) {
+            lastEmp();
+        }
+    }
+    
+    public void nextEmp() {
+        if (index < list.size() - 1 ) {
+            index += 1;
+            selectEmp();
+        } else if (index == list.size() - 1) {
+            firstEmp();
         }
     }
 
@@ -222,7 +261,7 @@ public class EmpManagement extends javax.swing.JFrame {
         btnFind = new javax.swing.JButton();
         btnOpen = new javax.swing.JButton();
         btnExit = new javax.swing.JButton();
-        jLabel7 = new javax.swing.JLabel();
+        lblRecord = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
@@ -284,12 +323,27 @@ public class EmpManagement extends javax.swing.JFrame {
 
         tbnPrevious.setForeground(new java.awt.Color(0, 0, 0));
         tbnPrevious.setText("<<");
+        tbnPrevious.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                tbnPreviousActionPerformed(evt);
+            }
+        });
 
         btnNext.setForeground(new java.awt.Color(0, 0, 0));
         btnNext.setText(">>");
+        btnNext.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnNextActionPerformed(evt);
+            }
+        });
 
         btnLast.setForeground(new java.awt.Color(0, 0, 0));
         btnLast.setText(">|");
+        btnLast.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnLastActionPerformed(evt);
+            }
+        });
 
         jScrollPane2.setForeground(new java.awt.Color(0, 0, 0));
 
@@ -354,9 +408,9 @@ public class EmpManagement extends javax.swing.JFrame {
             }
         });
 
-        jLabel7.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jLabel7.setForeground(new java.awt.Color(255, 0, 51));
-        jLabel7.setText("Record: 1 of 10");
+        lblRecord.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        lblRecord.setForeground(new java.awt.Color(255, 0, 51));
+        lblRecord.setText("Record: 1 of 10");
 
         jLabel8.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         jLabel8.setForeground(new java.awt.Color(255, 0, 51));
@@ -397,7 +451,7 @@ public class EmpManagement extends javax.swing.JFrame {
                                 .addGap(18, 18, 18)
                                 .addComponent(btnLast, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(18, 18, 18)
-                                .addComponent(jLabel7)
+                                .addComponent(lblRecord)
                                 .addGap(0, 0, Short.MAX_VALUE))
                             .addGroup(layout.createSequentialGroup()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
@@ -450,7 +504,7 @@ public class EmpManagement extends javax.swing.JFrame {
                     .addComponent(btnNext)
                     .addComponent(btnLast)
                     .addComponent(btnExit)
-                    .addComponent(jLabel7))
+                    .addComponent(lblRecord))
                 .addGap(18, 18, 18)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 171, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(26, Short.MAX_VALUE))
@@ -460,13 +514,14 @@ public class EmpManagement extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnFirstActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFirstActionPerformed
-        // TODO add your handling code here:
+        firstEmp();
     }//GEN-LAST:event_btnFirstActionPerformed
 
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
         initData();
         initTalbe();
         fillTable(list);
+        lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
     }//GEN-LAST:event_formWindowOpened
 
     private void btnNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNewActionPerformed
@@ -492,6 +547,18 @@ public class EmpManagement extends javax.swing.JFrame {
     private void btnFindActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFindActionPerformed
         findEmployee();
     }//GEN-LAST:event_btnFindActionPerformed
+
+    private void btnLastActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLastActionPerformed
+        lastEmp();
+    }//GEN-LAST:event_btnLastActionPerformed
+
+    private void tbnPreviousActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tbnPreviousActionPerformed
+        preEmp();
+    }//GEN-LAST:event_tbnPreviousActionPerformed
+
+    private void btnNextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNextActionPerformed
+        nextEmp();
+    }//GEN-LAST:event_btnNextActionPerformed
 
     /**
      * @param args the command line arguments
@@ -544,11 +611,11 @@ public class EmpManagement extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable jTable1;
+    private javax.swing.JLabel lblRecord;
     private javax.swing.JTable tblEmployee;
     private javax.swing.JButton tbnPrevious;
     private javax.swing.JTextField txtAge;
