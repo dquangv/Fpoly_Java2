@@ -6,7 +6,8 @@ package lab4;
 
 import java.awt.Color;
 import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 
 /**
@@ -21,6 +22,75 @@ public class StaffManage extends javax.swing.JFrame {
     public StaffManage() {
         initComponents();
         setLocationRelativeTo(null);
+    }
+
+    public void check() throws MyException {
+        Staff st = new Staff();
+
+        if (txtName.getText().equals("")) {
+            txtName.setBackground(Color.yellow);
+            JOptionPane.showMessageDialog(this, "Không để trống ô tên");
+            return;
+        } else {
+            txtName.setBackground(Color.white);
+            st.setName(txtName.getText());
+        }
+
+        if (txtBDay.getText().equals("")) {
+            txtBDay.setBackground(Color.yellow);
+            JOptionPane.showMessageDialog(this, "Không để trống ô ngày sinh");
+            return;
+        } else {
+
+            try {
+                txtBDay.setBackground(Color.white);
+                XDate.parse(txtBDay.getText(), "dd-MM-yyyy");
+                st.setBirthday(new SimpleDateFormat("dd-MM-yyyy").parse(txtBDay.getText()));
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Nhập ngày sinh theo định dạng dd-MM-yyyy");
+                txtBDay.setBackground(Color.yellow);
+                return;
+            }
+        }
+
+        try {
+
+            String regex = "(^-)*\\d+(.\\d+)*";
+
+            if (txtSalary.getText().matches(regex) == false) {
+                JOptionPane.showMessageDialog(this, "Salary must be a number");
+                txtSalary.setBackground(Color.yellow);
+                return;
+            } else {
+                st.setSalary(Double.parseDouble(txtSalary.getText()));
+                txtSalary.setBackground(Color.white);
+            }
+
+            if (txtAge.getText().matches(regex) == false) {
+                JOptionPane.showMessageDialog(this, "Age must be a number");
+                txtAge.setBackground(Color.yellow);
+                return;
+            } else {
+                st.setAge(Integer.parseInt(txtAge.getText()));
+                txtAge.setBackground(Color.white);
+            }
+        } catch (MyException ex) {
+            JOptionPane.showMessageDialog(this, ex.getError());
+            if (ex.getErrorCode().compareToIgnoreCase("02") == 0 || ex.getErrorCode().compareToIgnoreCase("03") == 0) {
+                txtSalary.setBackground(Color.yellow);
+
+            }
+            if (ex.getErrorCode().compareToIgnoreCase("04") == 0) {
+                txtAge.setBackground(Color.yellow);
+
+            }
+            return;
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Not valid");
+            return;
+        }
+
+        JOptionPane.showMessageDialog(this, "Nhập thành công");
     }
 
     /**
@@ -40,6 +110,8 @@ public class StaffManage extends javax.swing.JFrame {
         jLabel4 = new javax.swing.JLabel();
         txtSalary = new javax.swing.JTextField();
         btnCheck = new javax.swing.JButton();
+        jLabel5 = new javax.swing.JLabel();
+        txtAge = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -60,6 +132,8 @@ public class StaffManage extends javax.swing.JFrame {
             }
         });
 
+        jLabel5.setText("TUỔI");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -74,14 +148,15 @@ public class StaffManage extends javax.swing.JFrame {
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel2)
                             .addComponent(jLabel3)
-                            .addComponent(jLabel4))
+                            .addComponent(jLabel4)
+                            .addComponent(jLabel5))
                         .addGap(29, 29, 29)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(btnCheck)
-                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(txtName)
-                                .addComponent(txtBDay)
-                                .addComponent(txtSalary, javax.swing.GroupLayout.DEFAULT_SIZE, 250, Short.MAX_VALUE)))))
+                            .addComponent(txtName)
+                            .addComponent(txtBDay)
+                            .addComponent(txtSalary, javax.swing.GroupLayout.DEFAULT_SIZE, 250, Short.MAX_VALUE)
+                            .addComponent(txtAge))))
                 .addContainerGap(34, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
@@ -101,64 +176,23 @@ public class StaffManage extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
                     .addComponent(txtSalary, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel5)
+                    .addComponent(txtAge, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addComponent(btnCheck)
-                .addContainerGap(18, Short.MAX_VALUE))
+                .addContainerGap(16, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCheckActionPerformed
-        if (txtName.getText().equals("")) {
-            txtName.setBackground(Color.yellow);
-            JOptionPane.showMessageDialog(this, "Không để trống ô tên");
-            return;
-        } else {
-            txtName.setBackground(Color.white);
-        }
-
-        if (txtBDay.getText().equals("")) {
-            txtBDay.setBackground(Color.yellow);
-            JOptionPane.showMessageDialog(this, "Không để trống ô ngày sinh");
-            return;
-        } else {
-            txtBDay.setBackground(Color.white);
-        }
-
         try {
-            XDate.parse(txtBDay.getText(), "dd-MM-yyyy");
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Nhập ngày sinh theo định dạng dd-MM-yyyy");
-            txtBDay.setBackground(Color.yellow);
-            return;
+            check();
+        } catch (MyException ex) {
         }
-
-        if (txtSalary.getText().equals("")) {
-            txtSalary.setBackground(Color.yellow);
-            JOptionPane.showMessageDialog(this, "Không để trống ô lương");
-            return;
-        } else {
-            txtSalary.setBackground(Color.white);
-        }
-
-        try {
-            double luong = Double.parseDouble(txtSalary.getText());
-
-            if (luong <= 0) {
-                txtSalary.setBackground(Color.yellow);
-                JOptionPane.showMessageDialog(this, "Lương phải lớn hơn 0");
-                return;
-            } else {
-                txtSalary.setBackground(Color.white);
-            }
-        } catch (Exception e) {
-            txtSalary.setBackground(Color.yellow);
-            JOptionPane.showMessageDialog(this, "Lương phải là số");
-            return;
-        }
-        
-        JOptionPane.showMessageDialog(this, "Nhập thành công");
     }//GEN-LAST:event_btnCheckActionPerformed
 
     /**
@@ -202,6 +236,8 @@ public class StaffManage extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JTextField txtAge;
     private javax.swing.JTextField txtBDay;
     private javax.swing.JTextField txtName;
     private javax.swing.JTextField txtSalary;
