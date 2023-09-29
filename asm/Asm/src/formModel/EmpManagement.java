@@ -1,6 +1,9 @@
 package formModel;
 
+import Interface.IEmpManagement;
+import MyException.MyException;
 import dataModel.Employee;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.table.DefaultTableModel;
@@ -15,14 +18,15 @@ import javax.swing.JOptionPane;
  *
  * @author Quang
  */
-public class EmpManagement extends javax.swing.JFrame {
+public class EmpManagement extends javax.swing.JFrame implements IEmpManagement {
 
     DefaultTableModel tblModel;
     List<Employee> list = new ArrayList<>();
-    private static String url = "jdbc:sqlserver://localhost:1433;databaseName=Java2_Employee;user=sa;password=123;encrypt=false;";
+    boolean openFile = false;
     int index = -1;
+    private String url = "jdbc:sqlserver://localhost:1433;databaseName=Java2_Employee;user=sa;password=123;encrypt=false;";
 
-    public static Connection getConnection() throws SQLException {
+    public Connection getConnection() throws SQLException {
         return DriverManager.getConnection(url);
     }
 
@@ -81,12 +85,42 @@ public class EmpManagement extends javax.swing.JFrame {
         lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
     }
 
-    public void clearForm() {
+    public void checkForm() throws MyException {
+
+    }
+
+    private void selectEmp() {
+        tblEmployee.setRowSelectionInterval(index, index);
+        showDetail();
+        lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
+    }
+
+    @Override
+    public void Open() {
+        initData();
+        fillTable(list);
+        lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
+        openFile = true;
+    }
+
+    @Override
+    public void Exit() {
+        System.exit(0);
+    }
+
+    @Override
+    public void New() {
         txtCode.setText(null);
         txtName.setText(null);
         txtAge.setText(null);
         txtEmail.setText(null);
         txtSalary.setText(null);
+
+        txtCode.setBackground(Color.white);
+        txtName.setBackground(Color.white);
+        txtAge.setBackground(Color.white);
+        txtEmail.setBackground(Color.white);
+        txtSalary.setBackground(Color.white);
 
         fillTable(list);
         index = -1;
@@ -94,60 +128,126 @@ public class EmpManagement extends javax.swing.JFrame {
         lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
     }
 
-    public void saveForm() {
-        if (index == -1) {
-            Employee emp = new Employee(txtCode.getText(), txtName.getText(), Integer.parseInt(txtAge.getText()), txtEmail.getText(), Double.parseDouble(txtSalary.getText()));
-
-            list.add(emp);
-            try {
-                Connection con = getConnection();
-                PreparedStatement stm = con.prepareStatement("insert into employee values (?, ?, ?, ?, ?);");
-                stm.setString(1, emp.getCode());
-                stm.setString(2, emp.getName());
-                stm.setInt(3, emp.getAge());
-                stm.setString(4, emp.getEmail());
-                stm.setDouble(5, emp.getSalary());
-                stm.executeQuery();
-            } catch (Exception ex) {
-            }
-
-            JOptionPane.showMessageDialog(this, "Added");
+    @Override
+    public void Save() throws MyException {
+        if (openFile == false) {
+            JOptionPane.showMessageDialog(this, "Please open file first");
         } else {
-            int choice = JOptionPane.showConfirmDialog(this, "Are you sure to update?", "Confirm", JOptionPane.YES_NO_OPTION);
+            if (index == -1) {
+                Employee emp = new Employee();
+                try {
+                    if (txtCode.getText().equals("")) {
+                        txtCode.setBackground(Color.yellow);
+                        throw new MyException("Code is empty", "emptyCode");
+                    } else {
+                        txtCode.setBackground(Color.white);
+                        emp.setCode(txtCode.getText());
+                    }
 
-            if (choice == JOptionPane.YES_OPTION) {
-                Employee emp = list.get(index);
+                    if (txtName.getText().equals("")) {
+                        txtName.setBackground(Color.yellow);
+                        throw new MyException("Name is empty", "emptyName");
+                    } else {
+                        txtName.setBackground(Color.white);
+                        emp.setName(txtName.getText());
+                    }
+
+                    if (!txtAge.getText().matches("\\d+")) {
+                        txtAge.setBackground(Color.yellow);
+                        throw new MyException("Age must be a number", "emptyAge");
+                    } else {
+                        txtAge.setBackground(Color.white);
+                        emp.setAge(Integer.parseInt(txtAge.getText()));
+
+                    }
+
+                    if (txtEmail.getText().equals("")) {
+                        txtEmail.setBackground(Color.yellow);
+                        throw new MyException("Email is empty", "emptyMail");
+                    } else {
+                        txtEmail.setBackground(Color.white);
+                        emp.setEmail(txtEmail.getText());
+                    }
+
+                    if (txtSalary.getText().matches("\\d+")) {
+                        txtSalary.setBackground(Color.yellow);
+                        throw new MyException("Salary must be a number", "emptySalary");
+                    } else {
+                        txtSalary.setBackground(Color.white);
+                        emp.setSalary(Double.parseDouble(txtSalary.getText()));
+                    }
+
+                    list.add(emp);
+                } catch (MyException ex) {
+                    JOptionPane.showMessageDialog(this, ex.getError());
+                    if (ex.getCodeError().equalsIgnoreCase("name")) {
+                        txtName.setBackground(Color.yellow);
+                    }
+                    if (ex.getCodeError().equalsIgnoreCase("age")) {
+                        txtAge.setBackground(Color.yellow);
+                    }
+                    if (ex.getCodeError().equalsIgnoreCase("mail")) {
+                        txtEmail.setBackground(Color.yellow);
+                    }
+                    if (ex.getCodeError().equalsIgnoreCase("salary")) {
+                        txtSalary.setBackground(Color.yellow);
+                    }
+                    return;
+                }
 
                 try {
                     Connection con = getConnection();
-                    PreparedStatement stm = con.prepareStatement("update employee set code = ?, name = ?, age = ?, email = ?, salary = ? where code = ?;");
-                    stm.setString(1, txtCode.getText());
-                    stm.setString(2, txtName.getText());
-                    stm.setInt(3, Integer.parseInt(txtAge.getText()));
-                    stm.setString(4, txtEmail.getText());
-                    stm.setDouble(5, Double.parseDouble(txtSalary.getText()));
-                    stm.setString(6, emp.getCode());
+                    PreparedStatement stm = con.prepareStatement("insert into employee values (?, ?, ?, ?, ?);");
+                    stm.setString(1, emp.getCode());
+                    stm.setString(2, emp.getName());
+                    stm.setInt(3, emp.getAge());
+                    stm.setString(4, emp.getEmail());
+                    stm.setDouble(5, emp.getSalary());
                     stm.executeQuery();
-
                 } catch (Exception ex) {
                 }
 
-                emp.setCode(txtCode.getText());
-                emp.setName(txtName.getText());
-                emp.setAge(Integer.parseInt(txtAge.getText()));
-                emp.setEmail(txtEmail.getText());
-                emp.setSalary(Double.parseDouble(txtSalary.getText()));
+                JOptionPane.showMessageDialog(this, "Added");
+            } else {
+                int choice = JOptionPane.showConfirmDialog(this, "Are you sure to update?", "Confirm", JOptionPane.YES_NO_OPTION);
 
-                JOptionPane.showMessageDialog(this, "Updated");
+                if (choice == JOptionPane.YES_OPTION) {
+                    Employee emp = list.get(index);
+
+                    try {
+                        Connection con = getConnection();
+                        PreparedStatement stm = con.prepareStatement("update employee set code = ?, name = ?, age = ?, email = ?, salary = ? where code = ?;");
+                        stm.setString(1, txtCode.getText());
+                        stm.setString(2, txtName.getText());
+                        stm.setInt(3, Integer.parseInt(txtAge.getText()));
+                        stm.setString(4, txtEmail.getText());
+                        stm.setDouble(5, Double.parseDouble(txtSalary.getText()));
+                        stm.setString(6, emp.getCode());
+                        stm.executeQuery();
+
+                    } catch (Exception ex) {
+                    }
+
+                    emp.setCode(txtCode.getText());
+                    emp.setName(txtName.getText());
+                    emp.setAge(Integer.parseInt(txtAge.getText()));
+                    emp.setEmail(txtEmail.getText());
+                    emp.setSalary(Double.parseDouble(txtSalary.getText()));
+
+                    JOptionPane.showMessageDialog(this, "Updated");
+
+                }
 
             }
-        }
 
-        fillTable(list);
-        clearForm();
+            fillTable(list);
+
+            New();
+        }
     }
 
-    public void deleteEmployee() {
+    @Override
+    public void Delete() {
         if (index == -1) {
             JOptionPane.showMessageDialog(this, "Please select a staff you want to delete from the table below");
         } else {
@@ -165,66 +265,68 @@ public class EmpManagement extends javax.swing.JFrame {
                 list.remove(index);
                 JOptionPane.showMessageDialog(this, "Deleted");
                 fillTable(list);
-                clearForm();
+                New();
             }
         }
     }
 
-    public void findEmployee() {
-        List<Employee> findList = new ArrayList<>();
+    @Override
+    public void Find() {
+        try {
+            List<Employee> findList = new ArrayList<>();
 
-        for (Employee emp : list) {
-            if (emp.getCode().equals(txtCode.getText())) {
-                findList.add(emp);
+            for (Employee emp : list) {
+                if (emp.getCode().equals(txtCode.getText())) {
+                    findList.add(emp);
 
-                txtCode.setText(emp.getCode());
-                txtName.setText(emp.getName());
-                txtAge.setText(String.valueOf(emp.getAge()));
-                txtEmail.setText(emp.getEmail());
-                txtSalary.setText(String.valueOf(emp.getSalary()));
+                    txtCode.setText(emp.getCode());
+                    txtName.setText(emp.getName());
+                    txtAge.setText(String.valueOf(emp.getAge()));
+                    txtEmail.setText(emp.getEmail());
+                    txtSalary.setText(String.valueOf(emp.getSalary()));
 
-                fillTable(findList);
-                lblRecord.setText("Record: 1 of 1");
+                    fillTable(findList);
+                    lblRecord.setText("Record: 1 of 1");
+                }
             }
-        }
 
-        if (findList.size() == 0) {
-            JOptionPane.showMessageDialog(this, "This code was not found");
+            if (findList.size() == 0) {
+                JOptionPane.showMessageDialog(this, "This code was not found");
+            }
+        } catch (Exception ex) {
         }
     }
 
-    private void selectEmp() {
-        tblEmployee.setRowSelectionInterval(index, index);
-        showDetail();
-        lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
-    }
-
-    public void firstEmp() {
+    @Override
+    public void First() {
         index = 0;
         selectEmp();
     }
 
-    public void lastEmp() {
-        index = list.size() - 1;
-        selectEmp();
-    }
-
-    public void preEmp() {
+    @Override
+    public void Pre() {
         if (index > 0) {
             index -= 1;
             selectEmp();
         } else if (index == 0) {
-            lastEmp();
+            Last();
         }
     }
-    
-    public void nextEmp() {
-        if (index < list.size() - 1 ) {
+
+    @Override
+    public void Next() {
+        if (index < list.size() - 1) {
             index += 1;
             selectEmp();
         } else if (index == list.size() - 1) {
-            firstEmp();
+            First();
         }
+    }
+
+    @Override
+    public void Last() {
+        index = list.size() - 1;
+        selectEmp();
     }
 
     /**
@@ -304,6 +406,19 @@ public class EmpManagement extends javax.swing.JFrame {
         jLabel6.setText("LƯƠNG");
 
         txtCode.setForeground(new java.awt.Color(0, 0, 0));
+        txtCode.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                txtCodeFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                txtCodeFocusLost(evt);
+            }
+        });
+        txtCode.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                txtCodeMouseClicked(evt);
+            }
+        });
 
         txtName.setForeground(new java.awt.Color(0, 0, 0));
 
@@ -399,6 +514,11 @@ public class EmpManagement extends javax.swing.JFrame {
 
         btnOpen.setForeground(new java.awt.Color(0, 0, 0));
         btnOpen.setText("Open");
+        btnOpen.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnOpenActionPerformed(evt);
+            }
+        });
 
         btnExit.setForeground(new java.awt.Color(0, 0, 0));
         btnExit.setText("Exit");
@@ -514,22 +634,24 @@ public class EmpManagement extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnFirstActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFirstActionPerformed
-        firstEmp();
+        First();
     }//GEN-LAST:event_btnFirstActionPerformed
 
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
-        initData();
         initTalbe();
-        fillTable(list);
         lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
+        jLabel1.requestFocusInWindow();
     }//GEN-LAST:event_formWindowOpened
 
     private void btnNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNewActionPerformed
-        clearForm();
+        New();
     }//GEN-LAST:event_btnNewActionPerformed
 
     private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
-        saveForm();
+        try {
+            Save();
+        } catch (MyException ex) {
+        }
     }//GEN-LAST:event_btnSaveActionPerformed
 
     private void tblEmployeeMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblEmployeeMouseClicked
@@ -537,28 +659,41 @@ public class EmpManagement extends javax.swing.JFrame {
     }//GEN-LAST:event_tblEmployeeMouseClicked
 
     private void btnDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDeleteActionPerformed
-        deleteEmployee();
+        Delete();
     }//GEN-LAST:event_btnDeleteActionPerformed
 
     private void btnExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExitActionPerformed
-        System.exit(0);
+        Exit();
     }//GEN-LAST:event_btnExitActionPerformed
 
     private void btnFindActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFindActionPerformed
-        findEmployee();
+        Find();
     }//GEN-LAST:event_btnFindActionPerformed
 
     private void btnLastActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLastActionPerformed
-        lastEmp();
+        Last();
     }//GEN-LAST:event_btnLastActionPerformed
 
     private void tbnPreviousActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tbnPreviousActionPerformed
-        preEmp();
+        Pre();
     }//GEN-LAST:event_tbnPreviousActionPerformed
 
     private void btnNextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNextActionPerformed
-        nextEmp();
+        Next();
     }//GEN-LAST:event_btnNextActionPerformed
+
+    private void btnOpenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnOpenActionPerformed
+        Open();
+    }//GEN-LAST:event_btnOpenActionPerformed
+
+    private void txtCodeFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_txtCodeFocusGained
+    }//GEN-LAST:event_txtCodeFocusGained
+
+    private void txtCodeFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_txtCodeFocusLost
+    }//GEN-LAST:event_txtCodeFocusLost
+
+    private void txtCodeMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_txtCodeMouseClicked
+    }//GEN-LAST:event_txtCodeMouseClicked
 
     /**
      * @param args the command line arguments
@@ -574,16 +709,24 @@ public class EmpManagement extends javax.swing.JFrame {
                 if ("Windows".equals(info.getName())) {
                     javax.swing.UIManager.setLookAndFeel(info.getClassName());
                     break;
+
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(EmpManagement.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(EmpManagement.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(EmpManagement.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(EmpManagement.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(EmpManagement.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(EmpManagement.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(EmpManagement.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(EmpManagement.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
 
