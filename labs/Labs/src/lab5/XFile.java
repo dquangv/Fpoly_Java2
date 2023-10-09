@@ -28,7 +28,7 @@ public class XFile {
         return data;
     }
     
-    public static void write(String path, byte [] data) throws FileNotFoundException, IOException {
+    public static void write(String path, byte[] data) throws FileNotFoundException, IOException {
         FileOutputStream fos = new FileOutputStream(path);
         
         fos.write(data);

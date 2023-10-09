@@ -4,8 +4,6 @@
  */
 package lab6.Bai4;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JButton;
 import javax.swing.JTextField;
 
