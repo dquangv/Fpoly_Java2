@@ -4,11 +4,18 @@
  */
 package mySumary;
 
+import java.awt.Image;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 
 /**
@@ -19,6 +26,8 @@ public class ProForm extends javax.swing.JFrame {
 
     DefaultTableModel tblModel;
     List<Product> list = new ArrayList<>();
+    int index = -1;
+
     /**
      * Creates new form ProForm
      */
@@ -65,7 +74,8 @@ public class ProForm extends javax.swing.JFrame {
         btnDelete.setEnabled(false);
         btnSave.setEnabled(false);
         btnSkip.setEnabled(false);
-        tblMenu.setEnabled(true);
+        menSave.setEnabled(false);
+        index = -1;
     }
 
     public void unlock() {
@@ -77,17 +87,159 @@ public class ProForm extends javax.swing.JFrame {
         btnDelete.setEnabled(true);
         btnSave.setEnabled(true);
         btnSkip.setEnabled(true);
-        tblMenu.setEnabled(false);
+        tblMenu.setEnabled(true);
+        menSave.setEnabled(true);
     }
+
     public void clear() {
         txtName.setText(null);
         txtPrice.setText(null);
-        txtPhoto.setText(null);
+        txtPhoto.setIcon(null);
     }
+
+    public void showInfo() {
+        index = tblMenu.getSelectedRow();
+
+        txtName.setText(list.get(index).getName());
+        txtPrice.setText(String.valueOf(list.get(index).getPrice()));
+        txtPhoto.setIcon(list.get(index).getPhoto());
+    }
+
     public void add() {
-        list.add(new Product(txtName.getText(), Integer.parseInt(txtPrice.getText())));
+        for (int i = 0; i < list.size(); i++) {
+            if (txtName.getText().equals(list.get(index).getName())) {
+                JOptionPane.showMessageDialog(this, "This name has been existed");
+                return;
+            }
+        }
+
+        list.add(new Product(txtName.getText(), Integer.parseInt(txtPrice.getText()), txtPhoto.getIcon()));
         fillTable();
         clear();
+    }
+
+    public void edit() {
+        if (index == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a product in the table to edit");
+            return;
+        }
+
+        for (int i = 0; i < list.size(); i++) {
+            if (txtName.getText().equalsIgnoreCase(list.get(i).getName())) {
+                unlock();
+                return;
+            }
+        }
+
+        JOptionPane.showMessageDialog(this, "Your input name is not contained in list");
+    }
+
+    public void delete() {
+        if (index == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a product in the table to edit");
+            return;
+        }
+
+        list.remove(list.get(index));
+        fillTable();
+    }
+
+    public void open() throws IOException, FileNotFoundException, ClassNotFoundException {
+        JFileChooser openDialog = new JFileChooser();
+
+        if (openDialog.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+            list = (List<Product>) XFile.read(openDialog.getSelectedFile().getAbsolutePath());
+            fillTable();
+            tblMenu.setEnabled(true);
+        }
+    }
+
+    public void save() throws IOException {
+        JFileChooser saveDialog = new JFileChooser();
+
+        FileNameExtensionFilter fileSaveExt = new FileNameExtensionFilter("DAT file", "dat");
+        saveDialog.setFileFilter(fileSaveExt);
+
+        if (saveDialog.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = saveDialog.getSelectedFile();
+            String filePath = selectedFile.getAbsolutePath();
+
+            if (selectedFile.exists()) {
+                int confirm = JOptionPane.showConfirmDialog(null, "Are you sure to overwrite this file?", "Confirm", JOptionPane.YES_NO_OPTION);
+
+                if (confirm == JOptionPane.NO_OPTION) {
+                    selectedFile = saveToNewFile(saveDialog.getCurrentDirectory());
+                    filePath = selectedFile.getAbsolutePath();
+                }
+            }
+
+            try {
+                XFile.write(filePath, list);
+                JOptionPane.showMessageDialog(this, "Saved");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, ex);
+            }
+        }
+    }
+
+    public File saveToNewFile(File currentDirectory) {
+        JFileChooser saveDialog = new JFileChooser();
+
+        FileNameExtensionFilter fileSaveExt = new FileNameExtensionFilter("DAT file", "dat");
+        saveDialog.setFileFilter(fileSaveExt);
+
+        if (saveDialog.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = saveDialog.getSelectedFile();
+            String filePath = selectedFile.getAbsolutePath();
+
+            if (selectedFile.exists()) {
+                int confirm = JOptionPane.showConfirmDialog(null, "Are you sure to overwrite this file?", "Confirm", JOptionPane.YES_NO_OPTION);
+
+                if (confirm == JOptionPane.NO_OPTION) {
+                    return saveToNewFile(currentDirectory);
+                }
+            }
+
+            return selectedFile;
+        }
+
+        return null;
+    }
+
+    public void photo() {
+        JFileChooser photoDialog = new JFileChooser();
+        FileNameExtensionFilter photoExt = new FileNameExtensionFilter("jpg", "jpeg", "png", "Images");
+
+        photoDialog.setFileFilter(photoExt);
+        if (photoDialog.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = photoDialog.getSelectedFile();
+
+            if (checkPhotoFile(selectedFile)) {
+                ImageIcon img = new ImageIcon(selectedFile.getAbsolutePath());
+
+                int labelWidth = txtPhoto.getWidth();
+                int labelHeight = txtPhoto.getHeight();
+
+                double scaleX = (double) labelWidth / img.getIconWidth();
+                double scaleY = (double) labelHeight / img.getIconHeight();
+                double scale = Math.min(scaleX, scaleY);
+
+                int scaleWidth = (int) (img.getIconWidth() * scale);
+                int scaleHeight = (int) (img.getIconHeight() * scale);
+
+                Image scaledImg = img.getImage().getScaledInstance(scaleWidth, scaleHeight, Image.SCALE_SMOOTH);
+                ImageIcon imgIcon = new ImageIcon(scaledImg);
+
+                txtPhoto.setIcon(imgIcon);
+            } else {
+                JOptionPane.showMessageDialog(this, "This file is not a photo");
+            }
+        }
+    }
+
+    public boolean checkPhotoFile(File file) {
+        String path = file.getName().toLowerCase();
+        return path.endsWith("jpg") || path.endsWith("jpeg") || path.endsWith("png");
     }
 
     /**
@@ -145,6 +297,11 @@ public class ProForm extends javax.swing.JFrame {
         jLabel2.setText("Price");
 
         btnPhoto.setText("Add photo");
+        btnPhoto.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnPhotoActionPerformed(evt);
+            }
+        });
 
         btnSkip.setText("Skip");
         btnSkip.addActionListener(new java.awt.event.ActionListener() {
@@ -161,8 +318,18 @@ public class ProForm extends javax.swing.JFrame {
         });
 
         btnDelete.setText("Delete");
+        btnDelete.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnDeleteActionPerformed(evt);
+            }
+        });
 
         btnEdit.setText("Edit");
+        btnEdit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnEditActionPerformed(evt);
+            }
+        });
 
         btnNew.setText("New");
         btnNew.addActionListener(new java.awt.event.ActionListener() {
@@ -182,6 +349,11 @@ public class ProForm extends javax.swing.JFrame {
                 "Title 1", "Title 2", "Title 3", "Title 4"
             }
         ));
+        tblMenu.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tblMenuMouseClicked(evt);
+            }
+        });
         jScrollPane2.setViewportView(tblMenu);
 
         JMenu.setText("File");
@@ -195,6 +367,11 @@ public class ProForm extends javax.swing.JFrame {
         JMenu.add(menOpen);
 
         menSave.setText("Save to File");
+        menSave.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                menSaveActionPerformed(evt);
+            }
+        });
         JMenu.add(menSave);
 
         menClose.setText("Close File");
@@ -280,24 +457,55 @@ public class ProForm extends javax.swing.JFrame {
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
         initTable();
         lock();
+        tblMenu.setEnabled(false);
     }//GEN-LAST:event_formWindowOpened
 
     private void menOpenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menOpenActionPerformed
-        initData();
-        fillTable();
+        try {
+            open();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex);
+        }
     }//GEN-LAST:event_menOpenActionPerformed
 
     private void btnNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNewActionPerformed
         unlock();
+        clear();
     }//GEN-LAST:event_btnNewActionPerformed
 
     private void btnSkipActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSkipActionPerformed
         lock();
+        clear();
     }//GEN-LAST:event_btnSkipActionPerformed
 
     private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
         add();
+        clear();
     }//GEN-LAST:event_btnSaveActionPerformed
+
+    private void btnEditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditActionPerformed
+        edit();
+    }//GEN-LAST:event_btnEditActionPerformed
+
+    private void tblMenuMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblMenuMouseClicked
+        showInfo();
+    }//GEN-LAST:event_tblMenuMouseClicked
+
+    private void btnDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDeleteActionPerformed
+        delete();
+    }//GEN-LAST:event_btnDeleteActionPerformed
+
+    private void menSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menSaveActionPerformed
+        try {
+            save();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex);
+        }
+    }//GEN-LAST:event_menSaveActionPerformed
+
+    private void btnPhotoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPhotoActionPerformed
+        photo();
+    }//GEN-LAST:event_btnPhotoActionPerformed
 
     /**
      * @param args the command line arguments

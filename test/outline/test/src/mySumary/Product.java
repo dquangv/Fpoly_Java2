@@ -4,14 +4,17 @@
  */
 package mySumary;
 
+import java.io.Serializable;
+import javax.swing.Icon;
+
 /**
  *
  * @author Quang
  */
-public class Product {
+public class Product implements Serializable {
     public String name;
     public int price;
-    public String photo;
+    public Icon photo;
 
     public Product() {
     }
@@ -21,15 +24,15 @@ public class Product {
         this.price = price;
     }
 
-    public String getPhoto() {
+    public Icon getPhoto() {
         return photo;
     }
 
-    public void setPhoto(String photo) {
+    public void setPhoto(Icon photo) {
         this.photo = photo;
     }
 
-    public Product(String name, int price, String photo) {
+    public Product(String name, int price, Icon photo) {
         this.name = name;
         this.price = price;
         this.photo = photo;
