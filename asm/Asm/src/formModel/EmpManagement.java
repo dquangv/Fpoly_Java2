@@ -4,11 +4,25 @@ import Interface.IEmpManagement;
 import MyException.MyException;
 import dataModel.Employee;
 import java.awt.Color;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.lang.runtime.ObjectMethods;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.table.DefaultTableModel;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import javax.swing.JOptionPane;
+import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -18,13 +32,15 @@ import javax.swing.JOptionPane;
  *
  * @author Quang
  */
-public class EmpManagement extends javax.swing.JFrame implements IEmpManagement {
+public class EmpManagement extends javax.swing.JFrame implements IEmpManagement, Runnable {
 
     DefaultTableModel tblModel;
     List<Employee> list = new ArrayList<>();
     boolean openFile = false;
     int index = -1;
+    File defaultDirectory = new File("C:\\Users\\Quang\\OneDrive - FPT Polytechnic\\Desktop\\fpl\\hk3\\Java2\\official\\asm\\Asm\\src");
     private String url = "jdbc:sqlserver://localhost:1433;databaseName=Java2_Employee;user=sa;password=123;encrypt=false;";
+    boolean isDATFile = true;
 
     public Connection getConnection() throws SQLException {
         return DriverManager.getConnection(url);
@@ -52,6 +68,38 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement 
     }
 
     public void initData() {
+        JFileChooser openDialog = new JFileChooser();
+
+        FileNameExtensionFilter openFileExt = new FileNameExtensionFilter("Database", "dat", "sql");
+        openDialog.setFileFilter(openFileExt);
+        openDialog.setCurrentDirectory(defaultDirectory);
+
+        if (openDialog.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = openDialog.getSelectedFile();
+            String filePath = selectedFile.getAbsolutePath().toLowerCase();
+
+            if (filePath.endsWith("sql")) {
+                isDATFile = false;
+                openFileSQL();
+                return;
+            }
+
+            if (filePath.endsWith("dat")) {
+                try {
+                    isDATFile = true;
+                    openFileDAT(filePath);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, ex);
+                }
+                return;
+            }
+
+            JOptionPane.showMessageDialog(this, "App just reads file with DAT or SQL extension");
+            return;
+        }
+    }
+
+    public void openFileSQL() {
         try {
             Connection con = getConnection();
             Statement stm = con.createStatement();
@@ -60,7 +108,16 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement 
             while (rs.next()) {
                 list.add(new Employee(rs.getString("code"), rs.getString("name"), rs.getInt("age"), rs.getString("email"), rs.getDouble("salary")));
             }
-            System.out.println(list);
+        } catch (Exception ex) {
+        }
+    }
+
+    public void openFileDAT(String path) throws FileNotFoundException, IOException {
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(path));
+            list = (List<Employee>) ois.readObject();
+
+            ois.close();
         } catch (Exception ex) {
         }
     }
@@ -85,10 +142,6 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement 
         lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
     }
 
-    public void checkForm() throws MyException {
-
-    }
-
     private void selectEmp() {
         tblEmployee.setRowSelectionInterval(index, index);
         showDetail();
@@ -99,13 +152,89 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement 
     public void Open() {
         initData();
         fillTable(list);
-        lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
+        if (list != null) {
+            txtCode.setText(list.get(0).getCode());
+            txtName.setText(list.get(0).getName());
+            txtAge.setText(String.valueOf(list.get(0).getAge()));
+            txtEmail.setText(list.get(0).getEmail());
+            txtSalary.setText(String.valueOf(list.get(0).getSalary()));
+            lblRecord.setText("Record: 1 of " + list.size());
+        } else {
+            lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
+        }
+
         openFile = true;
     }
 
     @Override
     public void Exit() {
+        if (isDATFile) {
+            int confirmSave = JOptionPane.showConfirmDialog(this, "Do you want to save this to DAT file?");
+
+            if (confirmSave == JOptionPane.YES_OPTION) {
+                JFileChooser saveDialog = new JFileChooser();
+                saveDialog.setCurrentDirectory(defaultDirectory);
+
+                FileNameExtensionFilter fileSaveExt = new FileNameExtensionFilter("DAT file", "dat");
+                saveDialog.setFileFilter(fileSaveExt);
+
+                if (saveDialog.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+                    File selectedFile = saveDialog.getSelectedFile();
+                    String filePath = selectedFile.getAbsolutePath();
+
+                    if (selectedFile.exists()) {
+                        int confirm = JOptionPane.showConfirmDialog(null, "Are you sure to overwrite this file?", "Confirm", JOptionPane.YES_NO_OPTION);
+
+                        if (confirm == JOptionPane.NO_OPTION) {
+                            selectedFile = saveToNewFile(saveDialog.getCurrentDirectory());
+                            filePath = selectedFile.getAbsolutePath();
+                        } else {
+                            try {
+                                ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath));
+                                oos.writeObject(list);
+                                JOptionPane.showMessageDialog(this, "Saved");
+                            } catch (Exception ex) {
+                                JOptionPane.showMessageDialog(this, ex);
+                            }
+                        }
+                    } else {
+                        try {
+                            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath + ".dat"));
+                            oos.writeObject(list);
+                            JOptionPane.showMessageDialog(this, "Saved");
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(this, ex);
+                        }
+                    }
+                }
+            }
+        }
+
         System.exit(0);
+
+    }
+
+    public File saveToNewFile(File currentDirectory) {
+        JFileChooser saveDialog = new JFileChooser();
+
+        FileNameExtensionFilter fileSaveExt = new FileNameExtensionFilter("DAT file", "dat");
+        saveDialog.setFileFilter(fileSaveExt);
+
+        if (saveDialog.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = saveDialog.getSelectedFile();
+
+            if (selectedFile.exists()) {
+                int confirm = JOptionPane.showConfirmDialog(null, "Are you sure to overwrite this file?", "Confirm", JOptionPane.YES_NO_OPTION);
+
+                if (confirm == JOptionPane.NO_OPTION) {
+                    return saveToNewFile(currentDirectory);
+                }
+            }
+
+            return selectedFile;
+        }
+
+        return null;
     }
 
     @Override
@@ -124,77 +253,84 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement 
 
         fillTable(list);
         index = -1;
-
+        System.out.println(list.size());
         lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
     }
 
     @Override
     public void Save() throws MyException {
-        if (openFile == false) {
-            JOptionPane.showMessageDialog(this, "Please open file first");
-        } else {
-            if (index == -1) {
-                Employee emp = new Employee();
-                try {
-                    if (txtCode.getText().equals("")) {
-                        txtCode.setBackground(Color.yellow);
-                        throw new MyException("Code is empty", "emptyCode");
-                    } else {
-                        txtCode.setBackground(Color.white);
-                        emp.setCode(txtCode.getText());
+        if (index == -1) {
+            Employee emp = new Employee();
+            try {
+                if (txtCode.getText().equals("")) {
+                    txtCode.setBackground(Color.yellow);
+                    throw new MyException("Code is empty", "emptyCode");
+                } else {
+                    System.out.println(list.size());
+                    if (list != null) {
+                        for (int i = 0; i < list.size(); i++) {
+                            if (txtCode.getText().equalsIgnoreCase(list.get(i).getCode())) {
+                                txtCode.setBackground(Color.yellow);
+                                throw new MyException("This code has been existed", "duplicatedCode");
+                            }
+                        }
                     }
-
-                    if (txtName.getText().equals("")) {
-                        txtName.setBackground(Color.yellow);
-                        throw new MyException("Name is empty", "emptyName");
-                    } else {
-                        txtName.setBackground(Color.white);
-                        emp.setName(txtName.getText());
-                    }
-
-                    if (!txtAge.getText().matches("\\d+")) {
-                        txtAge.setBackground(Color.yellow);
-                        throw new MyException("Age must be a number", "emptyAge");
-                    } else {
-                        txtAge.setBackground(Color.white);
-                        emp.setAge(Integer.parseInt(txtAge.getText()));
-
-                    }
-
-                    if (txtEmail.getText().equals("")) {
-                        txtEmail.setBackground(Color.yellow);
-                        throw new MyException("Email is empty", "emptyMail");
-                    } else {
-                        txtEmail.setBackground(Color.white);
-                        emp.setEmail(txtEmail.getText());
-                    }
-
-                    if (txtSalary.getText().matches("\\d+")) {
-                        txtSalary.setBackground(Color.yellow);
-                        throw new MyException("Salary must be a number", "emptySalary");
-                    } else {
-                        txtSalary.setBackground(Color.white);
-                        emp.setSalary(Double.parseDouble(txtSalary.getText()));
-                    }
-
-                    list.add(emp);
-                } catch (MyException ex) {
-                    JOptionPane.showMessageDialog(this, ex.getError());
-                    if (ex.getCodeError().equalsIgnoreCase("name")) {
-                        txtName.setBackground(Color.yellow);
-                    }
-                    if (ex.getCodeError().equalsIgnoreCase("age")) {
-                        txtAge.setBackground(Color.yellow);
-                    }
-                    if (ex.getCodeError().equalsIgnoreCase("mail")) {
-                        txtEmail.setBackground(Color.yellow);
-                    }
-                    if (ex.getCodeError().equalsIgnoreCase("salary")) {
-                        txtSalary.setBackground(Color.yellow);
-                    }
-                    return;
+                    txtCode.setBackground(Color.white);
+                    emp.setCode(txtCode.getText());
                 }
 
+                if (txtName.getText().equals("")) {
+                    txtName.setBackground(Color.yellow);
+                    throw new MyException("Name is empty", "emptyName");
+                } else {
+                    txtName.setBackground(Color.white);
+                    emp.setName(txtName.getText());
+                }
+
+                if (!txtAge.getText().matches("\\d+")) {
+                    txtAge.setBackground(Color.yellow);
+                    throw new MyException("Age must be a number", "emptyAge");
+                } else {
+                    txtAge.setBackground(Color.white);
+                    emp.setAge(Integer.parseInt(txtAge.getText()));
+
+                }
+
+                if (txtEmail.getText().equals("")) {
+                    txtEmail.setBackground(Color.yellow);
+                    throw new MyException("Email is empty", "emptyMail");
+                } else {
+                    txtEmail.setBackground(Color.white);
+                    emp.setEmail(txtEmail.getText());
+                }
+
+                if (!txtSalary.getText().matches("\\d+")) {
+                    txtSalary.setBackground(Color.yellow);
+                    throw new MyException("Salary must be a number", "emptySalary");
+                } else {
+                    txtSalary.setBackground(Color.white);
+                    emp.setSalary(Double.parseDouble(txtSalary.getText()));
+                }
+
+                list.add(emp);
+            } catch (MyException ex) {
+                JOptionPane.showMessageDialog(this, ex.getError());
+                if (ex.getCodeError().equalsIgnoreCase("name")) {
+                    txtName.setBackground(Color.yellow);
+                }
+                if (ex.getCodeError().equalsIgnoreCase("age")) {
+                    txtAge.setBackground(Color.yellow);
+                }
+                if (ex.getCodeError().equalsIgnoreCase("mail")) {
+                    txtEmail.setBackground(Color.yellow);
+                }
+                if (ex.getCodeError().equalsIgnoreCase("salary")) {
+                    txtSalary.setBackground(Color.yellow);
+                }
+                return;
+            }
+
+            if (!isDATFile) {
                 try {
                     Connection con = getConnection();
                     PreparedStatement stm = con.prepareStatement("insert into employee values (?, ?, ?, ?, ?);");
@@ -206,14 +342,15 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement 
                     stm.executeQuery();
                 } catch (Exception ex) {
                 }
+            }
 
-                JOptionPane.showMessageDialog(this, "Added");
-            } else {
-                int choice = JOptionPane.showConfirmDialog(this, "Are you sure to update?", "Confirm", JOptionPane.YES_NO_OPTION);
+            JOptionPane.showMessageDialog(this, "Added");
+        } else {
+            int choice = JOptionPane.showConfirmDialog(this, "Are you sure to update?", "Confirm", JOptionPane.YES_NO_OPTION);
 
-                if (choice == JOptionPane.YES_OPTION) {
-                    Employee emp = list.get(index);
-
+            if (choice == JOptionPane.YES_OPTION) {
+                Employee emp = list.get(index);
+                if (!isDATFile) {
                     try {
                         Connection con = getConnection();
                         PreparedStatement stm = con.prepareStatement("update employee set code = ?, name = ?, age = ?, email = ?, salary = ? where code = ?;");
@@ -227,23 +364,23 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement 
 
                     } catch (Exception ex) {
                     }
-
-                    emp.setCode(txtCode.getText());
-                    emp.setName(txtName.getText());
-                    emp.setAge(Integer.parseInt(txtAge.getText()));
-                    emp.setEmail(txtEmail.getText());
-                    emp.setSalary(Double.parseDouble(txtSalary.getText()));
-
-                    JOptionPane.showMessageDialog(this, "Updated");
-
                 }
+
+                emp.setCode(txtCode.getText());
+                emp.setName(txtName.getText());
+                emp.setAge(Integer.parseInt(txtAge.getText()));
+                emp.setEmail(txtEmail.getText());
+                emp.setSalary(Double.parseDouble(txtSalary.getText()));
+
+                JOptionPane.showMessageDialog(this, "Updated");
 
             }
 
-            fillTable(list);
-
-            New();
         }
+
+        fillTable(list);
+
+        New();
     }
 
     @Override
@@ -254,12 +391,14 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement 
             int choice = JOptionPane.showConfirmDialog(this, "Are you sure to delete?", "Confirm", JOptionPane.YES_NO_OPTION);
 
             if (choice == JOptionPane.YES_OPTION) {
-                try {
-                    Connection con = getConnection();
-                    PreparedStatement stm = con.prepareStatement("delete from employee where code = ?");
-                    stm.setString(1, txtCode.getText());
-                    stm.executeQuery();
-                } catch (Exception ex) {
+                if (!isDATFile) {
+                    try {
+                        Connection con = getConnection();
+                        PreparedStatement stm = con.prepareStatement("delete from employee where code = ?");
+                        stm.setString(1, txtCode.getText());
+                        stm.executeQuery();
+                    } catch (Exception ex) {
+                    }
                 }
 
                 list.remove(index);
@@ -364,7 +503,7 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement 
         btnOpen = new javax.swing.JButton();
         btnExit = new javax.swing.JButton();
         lblRecord = new javax.swing.JLabel();
-        jLabel8 = new javax.swing.JLabel();
+        lblClock = new javax.swing.JLabel();
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -532,9 +671,9 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement 
         lblRecord.setForeground(new java.awt.Color(255, 0, 51));
         lblRecord.setText("Record: 1 of 10");
 
-        jLabel8.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        jLabel8.setForeground(new java.awt.Color(255, 0, 51));
-        jLabel8.setText("00:00 AM");
+        lblClock.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        lblClock.setForeground(new java.awt.Color(255, 0, 51));
+        lblClock.setText("00:00 AM");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -581,7 +720,7 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement 
                                     .addComponent(txtAge, javax.swing.GroupLayout.PREFERRED_SIZE, 118, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addComponent(txtCode, javax.swing.GroupLayout.PREFERRED_SIZE, 118, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(jLabel8))))
+                                .addComponent(lblClock))))
                     .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 669, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(24, Short.MAX_VALUE))
         );
@@ -591,7 +730,7 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement 
                 .addGap(17, 17, 17)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel1)
-                    .addComponent(jLabel8))
+                    .addComponent(lblClock))
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel2)
@@ -641,6 +780,9 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement 
         initTalbe();
         lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
         jLabel1.requestFocusInWindow();
+
+        Thread t1 = new Thread(this);
+        t1.start();
     }//GEN-LAST:event_formWindowOpened
 
     private void btnNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNewActionPerformed
@@ -754,10 +896,10 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement 
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel8;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable jTable1;
+    private javax.swing.JLabel lblClock;
     private javax.swing.JLabel lblRecord;
     private javax.swing.JTable tblEmployee;
     private javax.swing.JButton tbnPrevious;
@@ -767,4 +909,20 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement 
     private javax.swing.JTextField txtName;
     private javax.swing.JTextField txtSalary;
     // End of variables declaration//GEN-END:variables
+
+    @Override
+    public void run() {
+        while (true) {
+            Date time = new Date();
+            SimpleDateFormat format = new SimpleDateFormat("hh:mm aa");
+
+            lblClock.setText(format.format(time));
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ex) {
+                System.out.println(ex);
+            }
+        }
+    }
 }

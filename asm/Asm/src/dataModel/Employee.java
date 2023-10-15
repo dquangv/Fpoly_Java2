@@ -5,13 +5,14 @@
 package dataModel;
 
 import MyException.MyException;
+import java.io.Serializable;
 import java.text.DecimalFormat;
 
 /**
  *
  * @author Quang
  */
-public class Employee {
+public class Employee implements Serializable {
 
     private String code, name, email;
     private int age;
@@ -33,7 +34,6 @@ public class Employee {
     }
 
     public void setCode(String code) {
-//        String codeRegEx = "."
         this.code = code;
     }
 
@@ -70,7 +70,7 @@ public class Employee {
     }
 
     public void setAge(int age) throws MyException {
-        if (age < 18 || age > 65) {
+        if (age < 16 || age > 55) {
             throw new MyException("Not of working age", "age");
         } else {
             this.age = age;
@@ -83,7 +83,7 @@ public class Employee {
     }
 
     public void setSalary(double salary) throws MyException {
-        if (salary < 0) {
+        if (salary < 5000) {
             throw new MyException("Salary must be greater than 0", "salary");
         } else {
             this.salary = salary;
