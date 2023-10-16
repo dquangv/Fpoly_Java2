@@ -27,6 +27,7 @@ public class ProForm extends javax.swing.JFrame {
     DefaultTableModel tblModel;
     List<Product> list = new ArrayList<>();
     int index = -1;
+    File defaultDirectory = new File("C:\\Users\\Quang\\OneDrive - FPT Polytechnic\\Desktop\\fpl\\hk3\\Java2\\official\\test\\outline\\test\\src\\mySumary");
 
     /**
      * Creates new form ProForm
@@ -49,14 +50,6 @@ public class ProForm extends javax.swing.JFrame {
         tblMenu.setModel(tblModel);
     }
 
-    public void initData() {
-        try {
-            list = (List<Product>) XFile.read("C:\\Users\\Quang\\OneDrive - FPT Polytechnic\\Desktop\\fpl\\hk3\\Java2\\official\\test\\outline\\test\\src\\mySumary\\product.dat");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
-
     public void fillTable() {
         tblModel.setRowCount(0);
 
@@ -75,6 +68,7 @@ public class ProForm extends javax.swing.JFrame {
         btnSave.setEnabled(false);
         btnSkip.setEnabled(false);
         menSave.setEnabled(false);
+        tblMenu.setEnabled(true);
         index = -1;
     }
 
@@ -89,6 +83,7 @@ public class ProForm extends javax.swing.JFrame {
         btnSkip.setEnabled(true);
         tblMenu.setEnabled(true);
         menSave.setEnabled(true);
+        tblMenu.setEnabled(false);
     }
 
     public void clear() {
@@ -98,11 +93,15 @@ public class ProForm extends javax.swing.JFrame {
     }
 
     public void showInfo() {
-        index = tblMenu.getSelectedRow();
+        try {
+            index = tblMenu.getSelectedRow();
 
-        txtName.setText(list.get(index).getName());
-        txtPrice.setText(String.valueOf(list.get(index).getPrice()));
-        txtPhoto.setIcon(list.get(index).getPhoto());
+            txtName.setText(list.get(index).getName());
+            txtPrice.setText(String.valueOf(list.get(index).getPrice()));
+            txtPhoto.setIcon(list.get(index).getPhoto());
+        } catch (Exception ex) {
+            System.out.println(ex);
+        }
     }
 
     public void add() {
@@ -146,7 +145,8 @@ public class ProForm extends javax.swing.JFrame {
 
     public void open() throws IOException, FileNotFoundException, ClassNotFoundException {
         JFileChooser openDialog = new JFileChooser();
-
+        openDialog.setCurrentDirectory(defaultDirectory);
+        
         if (openDialog.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
             list = (List<Product>) XFile.read(openDialog.getSelectedFile().getAbsolutePath());
             fillTable();
@@ -156,7 +156,8 @@ public class ProForm extends javax.swing.JFrame {
 
     public void save() throws IOException {
         JFileChooser saveDialog = new JFileChooser();
-
+        saveDialog.setCurrentDirectory(defaultDirectory);
+        
         FileNameExtensionFilter fileSaveExt = new FileNameExtensionFilter("DAT file", "dat");
         saveDialog.setFileFilter(fileSaveExt);
 
