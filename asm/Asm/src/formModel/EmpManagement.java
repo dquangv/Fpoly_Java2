@@ -36,12 +36,15 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
 
     DefaultTableModel tblModel;
     List<Employee> list = new ArrayList<>();
-    boolean openFile = false;
     int index = -1;
+    // default directory when jfilechooser opens
     File defaultDirectory = new File("C:\\Users\\Quang\\OneDrive - FPT Polytechnic\\Desktop\\fpl\\hk3\\Java2\\official\\asm\\Asm\\src");
+    // url of database (sql server)
     private String url = "jdbc:sqlserver://localhost:1433;databaseName=Java2_Employee;user=sa;password=123;encrypt=false;";
+    // identify the opened file is DAT file or not
     boolean isDATFile = true;
 
+    // method connect to sql server
     public Connection getConnection() throws SQLException {
         return DriverManager.getConnection(url);
     }
@@ -54,6 +57,7 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
         setLocationRelativeTo(null);
     }
 
+    // set name of column in model for table
     public void initTalbe() {
         tblModel = new DefaultTableModel() {
             @Override
@@ -67,11 +71,14 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
         tblEmployee.setModel(tblModel);
     }
 
+    // get data
     public void initData() {
         JFileChooser openDialog = new JFileChooser();
 
+        // filter the jFileChooser with DAT and SQL extension
         FileNameExtensionFilter openFileExt = new FileNameExtensionFilter("Database", "dat", "sql");
         openDialog.setFileFilter(openFileExt);
+
         openDialog.setCurrentDirectory(defaultDirectory);
 
         if (openDialog.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
@@ -143,6 +150,7 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
     }
 
     private void selectEmp() {
+        // get only 1 row
         tblEmployee.setRowSelectionInterval(index, index);
         showDetail();
         lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
@@ -152,6 +160,8 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
     public void Open() {
         initData();
         fillTable(list);
+
+        // auto fill text field with the 1st object if list is not null
         if (list != null) {
             txtCode.setText(list.get(0).getCode());
             txtName.setText(list.get(0).getName());
@@ -162,12 +172,11 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
         } else {
             lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
         }
-
-        openFile = true;
     }
 
     @Override
     public void Exit() {
+        // if user opened a DAT file or did not open a file, when click the Exit button, app asks for overwriting or saving a new file
         if (isDATFile) {
             int confirmSave = JOptionPane.showConfirmDialog(this, "Do you want to save this to DAT file?");
 
@@ -185,10 +194,12 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
                     if (selectedFile.exists()) {
                         int confirm = JOptionPane.showConfirmDialog(null, "Are you sure to overwrite this file?", "Confirm", JOptionPane.YES_NO_OPTION);
 
+                        // if do not overwrite when user chose the existed file, save a new file
                         if (confirm == JOptionPane.NO_OPTION) {
                             selectedFile = saveToNewFile(saveDialog.getCurrentDirectory());
                             filePath = selectedFile.getAbsolutePath();
                         } else {
+                            // if yes option, save to the existed file selected
                             try {
                                 ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath));
                                 oos.writeObject(list);
@@ -198,6 +209,7 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
                             }
                         }
                     } else {
+                        // if user enter a name of file and it has not existed, app save a new file with extention dat below
                         try {
                             ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath + ".dat"));
                             oos.writeObject(list);
@@ -210,8 +222,8 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
             }
         }
 
+        // shut down app after all
         System.exit(0);
-
     }
 
     public File saveToNewFile(File currentDirectory) {
@@ -223,9 +235,11 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
         if (saveDialog.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
             File selectedFile = saveDialog.getSelectedFile();
 
+            // in case user choose an existed file again
             if (selectedFile.exists()) {
                 int confirm = JOptionPane.showConfirmDialog(null, "Are you sure to overwrite this file?", "Confirm", JOptionPane.YES_NO_OPTION);
 
+                // if still not want to overwrite, ask for saving a new file again
                 if (confirm == JOptionPane.NO_OPTION) {
                     return saveToNewFile(currentDirectory);
                 }
@@ -259,14 +273,16 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
 
     @Override
     public void Save() throws MyException {
+        // add new object to list if user has not selected an object on the table
         if (index == -1) {
             Employee emp = new Employee();
             try {
+                // throw exception if this field is empty
                 if (txtCode.getText().equals("")) {
                     txtCode.setBackground(Color.yellow);
                     throw new MyException("Code is empty", "emptyCode");
                 } else {
-                    System.out.println(list.size());
+                    // throw ex if data input in this field has been existed in the list
                     if (list != null) {
                         for (int i = 0; i < list.size(); i++) {
                             if (txtCode.getText().equalsIgnoreCase(list.get(i).getCode())) {
@@ -275,7 +291,9 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
                             }
                         }
                     }
+
                     txtCode.setBackground(Color.white);
+                    // after meet all the conditions above, app check conditions of setter in the Object class
                     emp.setCode(txtCode.getText());
                 }
 
@@ -287,6 +305,7 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
                     emp.setName(txtName.getText());
                 }
 
+                //throw ex if data input in this field is not a digit
                 if (!txtAge.getText().matches("\\d+")) {
                     txtAge.setBackground(Color.yellow);
                     throw new MyException("Age must be a number", "emptyAge");
@@ -315,6 +334,8 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
                 list.add(emp);
             } catch (MyException ex) {
                 JOptionPane.showMessageDialog(this, ex.getError());
+
+                // turn the color of the filed infringed the condition in the object class
                 if (ex.getCodeError().equalsIgnoreCase("name")) {
                     txtName.setBackground(Color.yellow);
                 }
@@ -330,11 +351,18 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
                 return;
             }
 
+            //if app was running the SQL file, execute these code below to add a new object to sql server
             if (!isDATFile) {
                 try {
                     Connection con = getConnection();
+
+                    // "?" means parameters and they are set below
                     PreparedStatement stm = con.prepareStatement("insert into employee values (?, ?, ?, ?, ?);");
+
+                    // set code of object for the first parameter "?"
                     stm.setString(1, emp.getCode());
+
+                    // the second
                     stm.setString(2, emp.getName());
                     stm.setInt(3, emp.getAge());
                     stm.setString(4, emp.getEmail());
@@ -346,10 +374,13 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
 
             JOptionPane.showMessageDialog(this, "Added");
         } else {
+            // update data if that data was selected (index not equal -1)
             int choice = JOptionPane.showConfirmDialog(this, "Are you sure to update?", "Confirm", JOptionPane.YES_NO_OPTION);
 
             if (choice == JOptionPane.YES_OPTION) {
                 Employee emp = list.get(index);
+
+                //if app was running the SQL file, execute these code below to update data of the selected object to sql server
                 if (!isDATFile) {
                     try {
                         Connection con = getConnection();
@@ -378,11 +409,13 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
 
         }
 
+        // load the table after having editted
         fillTable(list);
 
         New();
     }
 
+    // the same with add and update, delete needs an object selected before executing
     @Override
     public void Delete() {
         if (index == -1) {
@@ -409,9 +442,11 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
         }
     }
 
+    // find an object based on code name
     @Override
     public void Find() {
         try {
+            // create a new list to contain the object found and only show it to table
             List<Employee> findList = new ArrayList<>();
 
             for (Employee emp : list) {
@@ -424,14 +459,17 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
                     txtEmail.setText(emp.getEmail());
                     txtSalary.setText(String.valueOf(emp.getSalary()));
 
+                    // show this list
                     fillTable(findList);
                     lblRecord.setText("Record: 1 of 1");
                 }
             }
 
+            // notify if there is not any object having code like the input code
             if (findList.size() == 0) {
                 JOptionPane.showMessageDialog(this, "This code was not found");
             }
+
         } catch (Exception ex) {
         }
     }
@@ -466,6 +504,28 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
     public void Last() {
         index = list.size() - 1;
         selectEmp();
+    }
+
+    // a clock run in a new thread
+    @Override
+    public void run() {
+        while (true) {
+            // create an instance is the current time
+            Date time = new Date();
+            
+            //format time
+            SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm aa");
+
+            // set format for the current time and then set for Clock label
+            lblClock.setText(dateFormat.format(time));
+
+            try {
+                // thread sleeps and wakes up after 1 second
+                Thread.sleep(1000);
+            } catch (InterruptedException ex) {
+                System.out.println(ex);
+            }
+        }
     }
 
     /**
@@ -781,6 +841,7 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
         lblRecord.setText("Record: " + (index + 1) + " of " + list.size());
         jLabel1.requestFocusInWindow();
 
+        // create a new thread to run parallel with the main
         Thread t1 = new Thread(this);
         t1.start();
     }//GEN-LAST:event_formWindowOpened
@@ -910,19 +971,4 @@ public class EmpManagement extends javax.swing.JFrame implements IEmpManagement,
     private javax.swing.JTextField txtSalary;
     // End of variables declaration//GEN-END:variables
 
-    @Override
-    public void run() {
-        while (true) {
-            Date time = new Date();
-            SimpleDateFormat format = new SimpleDateFormat("hh:mm aa");
-
-            lblClock.setText(format.format(time));
-
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ex) {
-                System.out.println(ex);
-            }
-        }
-    }
 }

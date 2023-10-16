@@ -42,8 +42,9 @@ public class Employee implements Serializable {
     }
 
     public void setName(String name) throws MyException {
-        String nameRegEx = ".*\\p{L}.*";
-        
+        // \\p{L} cho phép nhận ký tự có dấu
+        String nameRegEx = "[a-zA-Z\\p{L}]+([\\s+a-zA-Z\\p{L}])*";
+
         if (name.matches(nameRegEx)) {
             this.name = name;
         } else {
