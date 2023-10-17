@@ -10,6 +10,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.channels.AsynchronousFileChannel;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
@@ -144,6 +146,16 @@ public class StudentMan extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, ex);
         }
     }
+    
+    public void sortName() {
+        Collections.sort(list, (( o1, o2) -> o1.getName().compareTo(o2.getName())));
+        fillTable();
+    }
+    
+    public void sortMark() {
+        Collections.sort(list, (((o1, o2) -> Double.compare(o1.getMark(), o2.getMark()))));
+        fillTable();
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -273,8 +285,18 @@ public class StudentMan extends javax.swing.JFrame {
         });
 
         btnSortName.setText("SortByName");
+        btnSortName.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSortNameActionPerformed(evt);
+            }
+        });
 
         btnSortMark.setText("SortByMark");
+        btnSortMark.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSortMarkActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -405,6 +427,14 @@ public class StudentMan extends javax.swing.JFrame {
     private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
         save();
     }//GEN-LAST:event_btnSaveActionPerformed
+
+    private void btnSortNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSortNameActionPerformed
+        sortName();
+    }//GEN-LAST:event_btnSortNameActionPerformed
+
+    private void btnSortMarkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSortMarkActionPerformed
+        sortMark();
+    }//GEN-LAST:event_btnSortMarkActionPerformed
 
     /**
      * @param args the command line arguments
