@@ -209,7 +209,7 @@ public class ProForm extends javax.swing.JFrame {
 
     public void photo() {
         JFileChooser photoDialog = new JFileChooser();
-        FileNameExtensionFilter photoExt = new FileNameExtensionFilter("jpg", "jpeg", "png", "Images");
+        FileNameExtensionFilter photoExt = new FileNameExtensionFilter("Images","jpg", "jpeg", "png");
 
         photoDialog.setFileFilter(photoExt);
         if (photoDialog.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
